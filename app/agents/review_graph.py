@@ -19,6 +19,9 @@ class ReviewState(TypedDict):
     detected_language: Optional[str]
     language_confidence: Optional[float]
     
+    # Populated during the MCP analysis phase
+    static_analysis: Optional[Dict[str, Any]]
+    
     # Populated during the AI code review phase
     explanation: Optional[str]
     bugs: Optional[List[Dict[str, Any]]]
@@ -31,14 +34,15 @@ class ReviewState(TypedDict):
     error: Optional[str]
 
 # Import nodes after defining ReviewState to prevent circular import issues
-from app.agents.review_nodes import detect_language_node
+from app.agents.review_nodes import detect_language_node, run_mcp_analysis, review_code_with_gemini
+from app.utils.validators import validate_code_input
 
 def build_review_graph() -> CompiledStateGraph:
     """
     Builds and compiles the Code Reviewer LangGraph workflow.
     
     Current workflow:
-    START -> detect_language -> END
+    START -> detect_language -> review_code_with_gemini -> END
     
     Returns:
         CompiledStateGraph: The compiled LangGraph workflow ready for execution.
@@ -48,13 +52,58 @@ def build_review_graph() -> CompiledStateGraph:
     
     # Add nodes
     workflow.add_node("detect_language", detect_language_node)
+    workflow.add_node("mcp_analysis", run_mcp_analysis)
+    workflow.add_node("review_code_with_gemini", review_code_with_gemini)
     
     # Add edges
     workflow.add_edge(START, "detect_language")
-    workflow.add_edge("detect_language", END)
+    workflow.add_edge("detect_language", "mcp_analysis")
+    workflow.add_edge("mcp_analysis", "review_code_with_gemini")
+    workflow.add_edge("review_code_with_gemini", END)
     
     # Compile the graph
     return workflow.compile()
 
 # The module-level compiled graph ready for import and execution
 review_graph = build_review_graph()
+
+def run_review(code: str, depth: str = "Quick Scan") -> ReviewState:
+    """
+    Validates the input code and executes the complete Code Reviewer workflow.
+    
+    Args:
+        code (str): The code to review.
+        depth (str): The review depth, e.g., "Quick Scan" or "Deep Review".
+        
+    Returns:
+        ReviewState: The final state containing the AI review output or any errors.
+    """
+    is_valid, error_msg = validate_code_input(code)
+    
+    initial_state: ReviewState = {
+        "code": code,
+        "review_depth": depth,
+        "detected_language": None,
+        "language_confidence": None,
+        "static_analysis": None,
+        "explanation": None,
+        "bugs": [],
+        "security_issues": [],
+        "refactored_code": None,
+        "complexity": None,
+        "readability": None,
+        "error": None
+    }
+    
+    if not is_valid:
+        # Halt execution and return early if validation fails
+        initial_state["error"] = error_msg
+        return initial_state
+        
+    # Execute the workflow
+    try:
+        final_state = review_graph.invoke(initial_state)
+        return final_state
+    except Exception as e:
+        initial_state["error"] = f"An unexpected error occurred during execution: {str(e)}"
+        return initial_state
