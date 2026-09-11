@@ -1,0 +1,162 @@
+# Code Reviewer and Explainer
+
+An AI-powered code review tool that uses LangGraph, LangChain, LiteLLM, and Google Gemini to perform structured, multi-stage code analysis — with a Next.js + Clerk-authenticated frontend.
+
+---
+
+## Architecture
+
+```
+Code Reviewer and Explainer
+│
+├── backend/
+│   └── FastAPI + LangGraph + LangChain + LiteLLM + Gemini + MCP
+│
+└── frontend/
+    └── Next.js + TypeScript + Tailwind + Clerk
+```
+
+### How it works
+
+1. The **frontend** sends authenticated requests (Clerk JWT) to the FastAPI backend.
+2. The **backend** runs a LangGraph pipeline:
+   - **Language Detection** — heuristic regex classifier
+   - **MCP Static Analysis** — deterministic code structure analysis
+   - **AI Review** — structured review via LiteLLM → Gemini
+3. Results are returned as structured JSON and optionally as a Markdown report.
+
+---
+
+## Project Structure
+
+```
+PROJECT_ROOT/
+├── backend/
+│   ├── app/
+│   │   ├── agents/          # LangGraph workflow (graph + nodes)
+│   │   ├── ai/              # LiteLLM client + Pydantic prompts
+│   │   ├── analyzers/       # (reserved for future analyzers)
+│   │   ├── api/             # FastAPI routers
+│   │   ├── core/            # Auth (Clerk JWT verification)
+│   │   ├── mcp/             # MCP static analysis server + tools
+│   │   ├── services/        # Markdown report generation
+│   │   └── utils/           # Language detector, validators
+│   ├── tests/               # Pytest test suite
+│   ├── test_language_detector.py
+│   ├── test_mcp.py
+│   ├── .env                 # Backend secrets (NOT committed)
+│   ├── .env.example         # Backend env template
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── app/             # Next.js App Router pages
+│   │   ├── components/      # React UI components
+│   │   ├── lib/             # API client utilities
+│   │   └── types/           # TypeScript type definitions
+│   ├── public/
+│   ├── .env.example         # Frontend env template
+│   └── package.json
+│
+├── docs/
+├── CONTRIBUTING.md
+├── README.md
+└── .gitignore
+```
+
+---
+
+## Local Development Setup
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- A Google Gemini API key
+- A Clerk account (for authentication)
+
+---
+
+### Backend
+
+```bash
+cd backend
+
+# 1. Create and activate a virtual environment (from project root or backend/)
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure environment variables
+cp .env.example .env
+# Edit .env and fill in your GEMINI_API_KEY, CLERK_SECRET_KEY, etc.
+
+# 4. Start the API server
+uvicorn app.main:app --reload
+```
+
+The API will be available at: **http://localhost:8000**
+
+- Swagger UI: http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+
+---
+
+### Frontend
+
+```bash
+cd frontend
+
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment variables
+cp .env.example .env.local
+# Edit .env.local:
+#   NEXT_PUBLIC_API_URL=http://localhost:8000
+#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+
+# 3. Start the dev server
+npm run dev
+```
+
+The frontend will be available at: **http://localhost:3000**
+
+---
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+| Variable | Description |
+|---|---|
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `GEMINI_MODEL` | LiteLLM model string (e.g. `gemini/gemini-2.5-flash`) |
+| `CLERK_SECRET_KEY` | Clerk secret key for server-side use |
+| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_ISSUER_URL` | Clerk JWT issuer URL (e.g. `https://your-app.clerk.accounts.dev`) |
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend API base URL (e.g. `http://localhost:8000`) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key for browser |
+
+---
+
+## Running Tests
+
+```bash
+cd backend
+python -m pytest tests/ -v
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.

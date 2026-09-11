@@ -1,14 +1,34 @@
+# ─── Python / Virtual Environments ─────────────────────────────────────────────
 venv/
 .venv/
-.env
-.env.*
-!.env.example
 __pycache__/
 *.py[cod]
 *.pyc
+*.pyo
 *.log
+.pytest_cache/
+
+# ─── Backend Environment Variables ──────────────────────────────────────────────
+# Root-level (legacy, keep protected)
+.env
+.env.*
+!.env.example
+# backend/ directory
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# ─── Frontend Environment Variables ─────────────────────────────────────────────
+frontend/.env.local
+frontend/.env.*.local
+
+# ─── Next.js / Node ─────────────────────────────────────────────────────────────
 node_modules/
 .next/
+frontend/node_modules/
+frontend/.next/
+
+# ─── Editors / OS ────────────────────────────────────────────────────────────────
 .streamlit/
 .vscode/
 .DS_Store
