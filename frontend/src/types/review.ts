@@ -3,29 +3,40 @@ export interface ReviewRequest {
   depth: 'quick' | 'deep';
 }
 
+// ── Bug (matches backend app/ai/prompts.py Bug model) ────────────
 export interface Bug {
+  title?: string;
   description: string;
-  line_number?: number;
+  line_reference?: string | null;
+  line_number?: number | null;  // kept for compatibility
   severity: string;
 }
 
+// ── SecurityIssue (matches backend SecurityIssue model) ───────────
 export interface SecurityIssue {
+  title?: string;
   description: string;
-  line_number?: number;
+  line_reference?: string | null;
+  line_number?: number | null;
   severity: string;
+  recommendation?: string;
 }
 
+// ── Complexity (matches backend Complexity model) ─────────────────
 export interface Complexity {
-  time?: string;
-  space?: string;
-  details?: string;
+  time_complexity?: string;
+  space_complexity?: string;
+  explanation?: string;
 }
 
+// ── Readability (matches backend Readability model) ───────────────
 export interface Readability {
-  assessment?: string;
+  score?: number;
+  explanation?: string;
   suggestions?: string[];
 }
 
+// ── Full review API response ──────────────────────────────────────
 export interface ReviewResponse {
   success: boolean;
   language?: string | null;

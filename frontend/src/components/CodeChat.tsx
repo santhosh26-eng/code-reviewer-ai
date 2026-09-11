@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { useAuth } from "@clerk/nextjs";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
 import { sendChatMessage } from "@/lib/api";
 import { ChatMessage } from "@/types/chat";
 
@@ -11,49 +10,66 @@ interface CodeChatProps {
   selectedLanguage: string;
 }
 
+const SUGGESTED_PROMPTS = [
+  "What does this code do?",
+  "Find bugs in my code.",
+  "What is the time complexity?",
+  "How can I optimize this?",
+  "What edge cases are missing?",
+  "Explain this line by line.",
+];
+
 export function CodeChat({ currentCode, selectedLanguage }: CodeChatProps) {
-  const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll on new messages
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const handleSend = async () => {
-    const trimmedInput = input.trim();
-    if (!trimmedInput) return;
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  };
+
+  const handleSend = async (text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg) return;
 
     const userMsg: ChatMessage = {
-      id: Math.random().toString(),
-      role: 'user',
-      content: trimmedInput,
-      timestamp: new Date()
+      id: crypto.randomUUID(),
+      role: "user",
+      content: msg,
+      timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     setIsLoading(true);
 
     try {
-      const token = await getToken();
-      const aiResponse = await sendChatMessage({
-        message: trimmedInput,
-        code: currentCode,
-        language: selectedLanguage
-      }, token);
-      
+      const aiResponse = await sendChatMessage(
+        { message: msg, code: currentCode, language: selectedLanguage },
+        null
+      );
       setMessages((prev) => [...prev, aiResponse]);
-    } catch (error) {
-      const errorMsg: ChatMessage = {
-        id: Math.random().toString(),
-        role: 'assistant',
-        content: "Sorry, I encountered an error connecting to the chat service.",
-        timestamp: new Date()
+    } catch {
+      const errMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Sorry, I couldn't reach the assistant. Please try again.",
+        timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, errMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -67,77 +83,130 @@ export function CodeChat({ currentCode, selectedLanguage }: CodeChatProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-col border-b border-zinc-800 bg-zinc-900/50 p-4">
-        <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Panel header */}
+      <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-900/30">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600/20 border border-indigo-500/30">
           <Bot className="h-4 w-4 text-indigo-400" />
-          AI Code Assistant
-        </h2>
-        <p className="text-xs text-zinc-400 mt-1">Ask questions about your current code.</p>
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-100 leading-none">AI Code Assistant</h2>
+          <p className="text-[10px] text-zinc-500 mt-0.5">Ask questions about your code</p>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-700">
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-3 min-h-0">
         {messages.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center text-center text-sm text-zinc-500">
-            <Bot className="h-8 w-8 mb-3 opacity-50" />
-            <p>Paste your code and ask me<br/>how it works or to find bugs!</p>
-            <div className="mt-4 flex flex-col gap-2 w-full max-w-[200px]">
-              <button onClick={() => setInput("Explain this function.")} className="text-xs bg-zinc-800/50 hover:bg-zinc-800 rounded px-2 py-1.5 transition-colors">Explain this function.</button>
-              <button onClick={() => setInput("Can you optimize this?")} className="text-xs bg-zinc-800/50 hover:bg-zinc-800 rounded px-2 py-1.5 transition-colors">Can you optimize this?</button>
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-6">
+            {/* Empty state icon */}
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800">
+              <Sparkles className="h-6 w-6 text-indigo-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-zinc-300">Ask anything about your code</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                Paste code in the editor, then ask a question.
+              </p>
+            </div>
+
+            {/* Suggested prompts */}
+            <div className="w-full max-w-xs space-y-1.5 px-2">
+              {SUGGESTED_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => handleSend(prompt)}
+                  disabled={isLoading}
+                  className="w-full text-left text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-900/60 hover:bg-zinc-800/80 border border-zinc-800 hover:border-zinc-700 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
           </div>
         )}
-        
+
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${msg.role === 'user' ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
-              {msg.role === 'user' ? <User className="h-5 w-5 text-white" /> : <Bot className="h-5 w-5 text-indigo-400" />}
+          <div
+            key={msg.id}
+            className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+          >
+            {/* Avatar */}
+            <div
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md mt-0.5 ${
+                msg.role === "user" ? "bg-indigo-600" : "bg-zinc-800"
+              }`}
+              aria-hidden="true"
+            >
+              {msg.role === "user" ? (
+                <User className="h-3.5 w-3.5 text-white" />
+              ) : (
+                <Bot className="h-3.5 w-3.5 text-indigo-400" />
+              )}
             </div>
-            <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              <div className={`rounded-lg px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-indigo-500/20 text-indigo-100' : 'bg-zinc-800 text-zinc-200'}`}>
-                {msg.content}
+
+            {/* Bubble */}
+            <div
+              className={`max-w-[82%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-indigo-600/20 text-indigo-50 border border-indigo-500/20"
+                  : "bg-zinc-800/80 text-zinc-200 border border-zinc-700/50"
+              }`}
+            >
+              {msg.content}
+              <div className="text-[9px] text-zinc-500 mt-1 text-right">
+                {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </div>
-              <span className="text-[10px] text-zinc-500 mt-1">
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
             </div>
           </div>
         ))}
-        
+
+        {/* Thinking indicator */}
         {isLoading && (
-          <div className="flex gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-800">
-              <Loader2 className="h-5 w-5 text-indigo-400 animate-spin" />
+          <div className="flex gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-zinc-800">
+              <Loader2 className="h-3.5 w-3.5 text-indigo-400 animate-spin" />
             </div>
-            <div className="flex items-center text-xs text-zinc-400 italic">
-              AI is thinking...
+            <div className="bg-zinc-800/80 border border-zinc-700/50 rounded-xl px-3 py-2 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:0ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:150ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:300ms]" />
             </div>
           </div>
         )}
-        <div ref={endOfMessagesRef} />
+
+        <div ref={endRef} />
       </div>
 
-      <div className="p-3 border-t border-zinc-800 bg-zinc-950">
-        <div className="relative flex items-center">
+      {/* Input area */}
+      <div className="shrink-0 border-t border-zinc-800 bg-zinc-950 p-3">
+        <div className="flex items-end gap-2">
+          <label htmlFor="chat-input" className="sr-only">
+            Ask about your code
+          </label>
           <textarea
+            id="chat-input"
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Ask about your code..."
-            className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 py-2 pl-3 pr-10 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[40px] max-h-[120px] scrollbar-thin"
-            rows={1}
             disabled={isLoading}
+            rows={1}
+            aria-label="Chat message input"
+            className="flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 min-h-[38px] max-h-[120px] scrollbar-thin disabled:opacity-50 transition-colors"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 flex h-7 w-7 items-center justify-center rounded-md bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:hover:bg-indigo-500 transition-colors"
+            aria-label="Send message"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 transition-colors"
           >
             <Send className="h-4 w-4" />
           </button>
         </div>
-        <p className="text-[10px] text-center text-zinc-500 mt-2">
-          Shift+Enter for new line. The AI reads your current code.
+        <p className="text-[10px] text-zinc-600 mt-1.5 text-center">
+          Shift+Enter for new line · The assistant reads your current code
         </p>
       </div>
     </div>
