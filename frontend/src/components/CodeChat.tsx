@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 import { sendChatMessage } from "@/lib/api";
 import { ChatMessage } from "@/types/chat";
 
@@ -23,6 +24,7 @@ export function CodeChat({ currentCode, selectedLanguage }: CodeChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { getToken } = useAuth();
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -57,9 +59,10 @@ export function CodeChat({ currentCode, selectedLanguage }: CodeChatProps) {
     setIsLoading(true);
 
     try {
+      const token = await getToken();
       const aiResponse = await sendChatMessage(
-        { message: msg, code: currentCode, language: selectedLanguage },
-        null
+        { message: msg, code: currentCode, language: selectedLanguage, history: messages },
+        token
       );
       setMessages((prev) => [...prev, aiResponse]);
     } catch {

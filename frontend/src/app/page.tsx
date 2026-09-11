@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CodeChat } from "@/components/CodeChat";
 import { CodeWorkspace } from "@/components/CodeWorkspace";
+import { UserButton, SignInButton, useAuth } from "@clerk/nextjs";
 
 const DEFAULT_CODE = `def two_sum(nums, target):
     """
@@ -17,6 +18,7 @@ const DEFAULT_CODE = `def two_sum(nums, target):
 `;
 
 export default function Home() {
+  const { isSignedIn } = useAuth();
   const [currentCode, setCurrentCode] = useState<string>(DEFAULT_CODE);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("Python");
 
@@ -50,6 +52,15 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-800/50 bg-emerald-950/30 px-2.5 py-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-medium text-emerald-400 tracking-wide uppercase">Live</span>
+          </div>
+          <div className="ml-2">
+            {isSignedIn ? (
+              <UserButton />
+            ) : (
+              <SignInButton mode="modal">
+                <button className="text-xs font-semibold px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">Sign In</button>
+              </SignInButton>
+            )}
           </div>
         </div>
       </header>

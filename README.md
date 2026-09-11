@@ -23,7 +23,11 @@ Code Reviewer and Explainer
    - **Language Detection** — heuristic regex classifier
    - **MCP Static Analysis** — deterministic code structure analysis
    - **AI Review** — structured review via LiteLLM → Gemini
-3. Results are returned as structured JSON and optionally as a Markdown report.
+3. The **backend** provides an Execution Service via `DockerSandboxExecutor`:
+   - Runs code in isolated Docker containers with `--network none`, strict memory, and read-only limits.
+   - Parses output to determine test case success/failure.
+4. The **backend** provides an AI Chat Service via LangGraph state machines (`chat_graph.py`).
+5. Results are returned as structured JSON to the Next.js UI.
 
 ---
 

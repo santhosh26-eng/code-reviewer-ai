@@ -9,4 +9,5 @@ export interface ChatRequest {
   message: string;
   code: string;
   language: string;
+  history: ChatMessage[];
 }
