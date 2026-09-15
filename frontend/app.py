@@ -9,121 +9,123 @@ load_dotenv()
 
 st.set_page_config(page_title="AI Code Reviewer", page_icon="✨", layout="wide")
 
-# Custom CSS for styling
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+# Theme Handling
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
 
-    /* Premium Cyber Dark Background */
-    .stApp {
-        background: radial-gradient(circle at 10% 20%, rgb(14, 21, 38) 0%, rgb(8, 12, 23) 90%);
-        color: #e2e8f0;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Top padding */
-    .st-emotion-cache-16txtl3 {
-        padding-top: 1.5rem;
-    }
+if st.session_state.theme == "dark":
+    css = """
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        .stApp {
+            background: radial-gradient(circle at 10% 20%, #0b192c 0%, #030612 90%);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+        .st-emotion-cache-16txtl3 { padding-top: 1.5rem; }
+        .stChatMessage {
+            background-color: rgba(30, 41, 59, 0.4);
+            border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            color: #f8fafc;
+        }
+        h1, h2, h3, h4, h5, h6 { color: #f8fafc !important; font-weight: 800 !important; letter-spacing: -0.5px; }
+        .stMarkdown p { color: #cbd5e1 !important; }
+        .stButton>button {
+            border-radius: 8px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-weight: 600 !important; background-color: rgba(30, 41, 59, 0.6);
+            color: #f1f5f9; border: 1px solid rgba(148, 163, 184, 0.2); backdrop-filter: blur(8px);
+        }
+        .stButton>button[kind="primary"] {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            border: none; color: white; box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
+        }
+        .stButton>button:hover {
+            transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 25px rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8; color: #38bdf8;
+        }
+        .stButton>button[kind="primary"]:hover {
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); color: white;
+        }
+        .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px 8px 0 0; background-color: rgba(30, 41, 59, 0.3);
+            padding: 10px 20px; transition: all 0.2s ease; color: #94a3b8; border: 1px solid transparent; border-bottom: none;
+        }
+        .stTabs [data-baseweb="tab"]:hover { background-color: rgba(30, 41, 59, 0.8); color: #e2e8f0; }
+        .stTabs [aria-selected="true"] {
+            background-color: rgba(30, 41, 59, 0.8) !important; border: 1px solid rgba(148, 163, 184, 0.1) !important;
+            border-bottom: 3px solid #38bdf8 !important; color: #38bdf8 !important;
+        }
+        .stSelectbox>div>div, .stTextInput>div>div {
+            background-color: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #f1f5f9; border-radius: 6px;
+        }
+        code {
+            font-family: 'JetBrains Mono', monospace !important; background-color: rgba(15, 23, 42, 0.6) !important;
+            color: #38bdf8 !important; padding: 2px 6px !important; border-radius: 4px !important; border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+    </style>
+    """
+else:
+    css = """
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        .stApp {
+            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 50%, #ffd700 100%);
+            color: #1f2937;
+            font-family: 'Inter', sans-serif;
+        }
+        .st-emotion-cache-16txtl3 { padding-top: 1.5rem; }
+        .stChatMessage {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            border: 1px solid rgba(192, 192, 192, 0.5);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            color: #1f2937;
+        }
+        h1, h2, h3, h4, h5, h6 { color: #111827 !important; font-weight: 800 !important; letter-spacing: -0.5px; }
+        .stMarkdown p { color: #374151 !important; }
+        .stButton>button {
+            border-radius: 8px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-weight: 600 !important; background-color: #ffffff;
+            color: #1f2937; border: 1px solid #d1d5db; backdrop-filter: blur(8px);
+        }
+        .stButton>button[kind="primary"] {
+            background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+            border: none; color: white; box-shadow: 0 0 15px rgba(218, 165, 32, 0.3);
+        }
+        .stButton>button:hover {
+            transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 25px rgba(192, 192, 192, 0.4);
+            border-color: #c0c0c0; color: #1f2937;
+        }
+        .stButton>button[kind="primary"]:hover {
+            box-shadow: 0 8px 25px rgba(218, 165, 32, 0.5); color: white;
+        }
+        .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px 8px 0 0; background-color: rgba(255, 255, 255, 0.5);
+            padding: 10px 20px; transition: all 0.2s ease; color: #4b5563; border: 1px solid transparent; border-bottom: none;
+        }
+        .stTabs [data-baseweb="tab"]:hover { background-color: rgba(255, 255, 255, 0.9); color: #111827; }
+        .stTabs [aria-selected="true"] {
+            background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(192, 192, 192, 0.5) !important;
+            border-bottom: 3px solid #b8860b !important; color: #b8860b !important;
+        }
+        .stSelectbox>div>div, .stTextInput>div>div {
+            background-color: rgba(255, 255, 255, 0.8); border: 1px solid rgba(192, 192, 192, 0.5);
+            color: #1f2937; border-radius: 6px;
+        }
+        code {
+            font-family: 'JetBrains Mono', monospace !important; background-color: rgba(243, 244, 246, 0.8) !important;
+            color: #0369a1 !important; padding: 2px 6px !important; border-radius: 4px !important; border: 1px solid rgba(192, 192, 192, 0.5);
+        }
+    </style>
+    """
 
-    /* Glassmorphism for chat messages */
-    .stChatMessage {
-        background-color: rgba(30, 41, 59, 0.4);
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 12px;
-        border: 1px solid rgba(148, 163, 184, 0.1);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        color: #f8fafc;
-    }
-    
-    /* Vibrant Headers */
-    h1, h2, h3, h4, h5, h6 {
-        color: #f8fafc !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
-    }
-    .stMarkdown p {
-        color: #cbd5e1 !important;
-    }
-    
-    /* Dynamic Buttons with Neon Hover Effects */
-    .stButton>button {
-        border-radius: 8px !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        font-weight: 600 !important;
-        background-color: rgba(30, 41, 59, 0.6);
-        color: #f1f5f9;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        backdrop-filter: blur(8px);
-    }
-    
-    /* Primary Action Button (AI Review) */
-    .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-        border: none;
-        color: white;
-        box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 8px 25px rgba(6, 182, 212, 0.2); /* Cyan Glow */
-        border-color: #06b6d4;
-        color: #06b6d4;
-    }
-    
-    .stButton>button[kind="primary"]:hover {
-        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5); /* Purple Glow */
-        color: white;
-    }
-    
-    /* Refined Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px 8px 0 0;
-        background-color: rgba(30, 41, 59, 0.3);
-        padding: 10px 20px;
-        transition: all 0.2s ease;
-        color: #94a3b8;
-        border: 1px solid transparent;
-        border-bottom: none;
-    }
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: rgba(30, 41, 59, 0.8);
-        color: #e2e8f0;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: rgba(30, 41, 59, 0.8) !important;
-        border: 1px solid rgba(148, 163, 184, 0.1) !important;
-        border-bottom: 3px solid #06b6d4 !important; /* Electric Cyan accent */
-        color: #06b6d4 !important;
-    }
-    
-    /* Input Fields and Select Boxes */
-    .stSelectbox>div>div, .stTextInput>div>div {
-        background-color: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        color: #f1f5f9;
-        border-radius: 6px;
-    }
-    
-    /* Code styling in Markdown */
-    code {
-        font-family: 'JetBrains Mono', monospace !important;
-        background-color: rgba(15, 23, 42, 0.6) !important;
-        color: #38bdf8 !important; /* Sky blue code */
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
-        border: 1px solid rgba(148, 163, 184, 0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(css, unsafe_allow_html=True)
 
 # Token Handling
 if "token" not in st.session_state:
@@ -151,8 +153,18 @@ if not st.session_state.token:
     )
     st.stop()
 
-# Logout Sidebar
+# Logout and Theme Sidebar
 with st.sidebar:
+    st.markdown("### Settings")
+    
+    # Theme Toggle
+    theme_btn_label = "☀️ Switch to Light Mode" if st.session_state.theme == "dark" else "🌙 Switch to Dark Mode"
+    if st.button(theme_btn_label, use_container_width=True):
+        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+        st.rerun()
+        
+    st.divider()
+    
     st.markdown("### Profile")
     if st.button("Sign Out", use_container_width=True):
         st.session_state.token = None
