@@ -13,12 +13,12 @@ Code Reviewer and Explainer
 │   └── FastAPI + LangGraph + LangChain + LiteLLM + Gemini + MCP
 │
 └── frontend/
-    └── Next.js + TypeScript + Tailwind + Clerk
+    └── Streamlit + Python
 ```
 
 ### How it works
 
-1. The **frontend** sends authenticated requests (Clerk JWT) to the FastAPI backend.
+1. The **frontend** (Streamlit) sends requests to the FastAPI backend.
 2. The **backend** runs a LangGraph pipeline:
    - **Language Detection** — heuristic regex classifier
    - **MCP Static Analysis** — deterministic code structure analysis
@@ -53,14 +53,10 @@ PROJECT_ROOT/
 │   └── requirements.txt
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── app/             # Next.js App Router pages
-│   │   ├── components/      # React UI components
-│   │   ├── lib/             # API client utilities
-│   │   └── types/           # TypeScript type definitions
-│   ├── public/
-│   ├── .env.example         # Frontend env template
-│   └── package.json
+│   ├── app.py               # Streamlit application entry point
+│   ├── utils/               # API clients
+│   ├── .env                 # Frontend env configuration
+│   └── requirements.txt     # Frontend Python dependencies
 │
 ├── docs/
 ├── CONTRIBUTING.md
@@ -75,9 +71,7 @@ PROJECT_ROOT/
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
 - A Google Gemini API key
-- A Clerk account (for authentication)
 
 ---
 
@@ -114,20 +108,22 @@ The API will be available at: **http://localhost:8000**
 ```bash
 cd frontend
 
-# 1. Install dependencies
-npm install
+# 1. Create and activate a virtual environment (optional but recommended)
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
 
-# 2. Configure environment variables
-cp .env.example .env.local
-# Edit .env.local:
-#   NEXT_PUBLIC_API_URL=http://localhost:8000
-#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+# 2. Install dependencies
+pip install -r requirements.txt
 
-# 3. Start the dev server
-npm run dev
+# 3. Configure environment variables (ensure API_URL points to the backend)
+# edit .env
+
+# 4. Start the Streamlit app
+streamlit run app.py
 ```
 
-The frontend will be available at: **http://localhost:3000**
+The frontend will be available at: **http://localhost:8501**
 
 ---
 
@@ -143,12 +139,11 @@ The frontend will be available at: **http://localhost:3000**
 | `CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
 | `CLERK_ISSUER_URL` | Clerk JWT issuer URL (e.g. `https://your-app.clerk.accounts.dev`) |
 
-### Frontend (`frontend/.env.local`)
+### Frontend (`frontend/.env`)
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL (e.g. `http://localhost:8000`) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key for browser |
+| `API_URL` | Backend API base URL (e.g. `http://localhost:8000`) |
 
 ---
 
