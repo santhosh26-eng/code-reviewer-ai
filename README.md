@@ -3,7 +3,7 @@
 ![Architecture](docs/architecture.md)
 
 ## What it does
-The AI Code Reviewer is an intelligent, automated platform that helps developers analyze, execute, and improve their code. You can paste code in over 26 languages (including Python, C, Java, Go, Rust, and MATLAB). 
+The AI Code Reviewer is an intelligent, automated platform that helps developers analyze, execute, and improve their code. You can paste code to be reviewed and securely executed in C, C++, Java, and Python. 
 
 The platform features a beautiful Streamlit-based workspace (with dynamic **Cyber Dark** and **Premium Light** modes) and is secured by Google OAuth JWT authentication. 
 
