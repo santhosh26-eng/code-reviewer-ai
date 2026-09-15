@@ -32,14 +32,28 @@ def generate_review(system_prompt: str, user_prompt: str, response_schema: Any) 
     ]
     
     try:
-        # LiteLLM supports passing a Pydantic class to response_format
-        response = litellm.completion(
-            model=model_name,
-            messages=messages,
-            api_key=api_key,
-            response_format=response_schema,
-            temperature=0.2,
-        )
+        # Try Mistral First
+        try:
+            response = litellm.completion(
+                model=model_name,
+                messages=messages,
+                api_key=api_key,
+                response_format=response_schema,
+                temperature=0.2,
+            )
+        except Exception as e:
+            # Fallback to Gemini if Mistral fails
+            gemini_key = os.getenv("GEMINI_API_KEY")
+            if not gemini_key:
+                raise RuntimeError(f"Mistral failed ({str(e)}) and GEMINI_API_KEY is not set for fallback.")
+                
+            response = litellm.completion(
+                model="gemini/gemini-1.5-flash",
+                messages=messages,
+                api_key=gemini_key,
+                response_format=response_schema,
+                temperature=0.2,
+            )
         
         # Parse the JSON response text back into the Pydantic schema
         content = response.choices[0].message.content
