@@ -49,15 +49,14 @@ streamlit run app.py
 
 ---
 
-## Which AI model is used and why
-This project uses **Mistral** (`open-mistral-7b`) as the primary AI model, accessed through the **LiteLLM** abstraction layer, with **Google Gemini** (`gemini/gemini-1.5-pro-latest`) acting as a seamless fallback.
+## Which AI model is used and why?
+This project uses **Mistral** (`open-mistral-7b`) as the *default* AI model, accessed through the **LiteLLM** abstraction layer, with **Google Gemini** (`gemini/gemini-1.5-pro-latest`) acting as a seamless fallback.
 
-**Why Mistral?**
-- **Speed & Efficiency**: Mistral 7B is highly optimized for fast inference, providing near-instantaneous code reviews without the latency overhead of massive models.
-- **Cost-Effective**: Open-weights models like Mistral are extremely cost-effective for high-volume tasks like automated code scanning.
+**Why Mistral 7B as the default?**
+The choice of an open-weights 7B model is a deliberate engineering tradeoff optimizing for **speed, cost-efficiency, and low latency**. For high-volume automated code scanning, Mistral provides near-instantaneous feedback without the massive API costs associated with frontier models.
 
-**Why Gemini (Fallback)?**
-- **Resiliency**: If the Mistral API hits a rate limit or goes down, the backend automatically intercepts the error and reroutes the request to Google Gemini, ensuring the user *always* gets a code review without experiencing a crash.
+**Enterprise Scalability (LiteLLM)**
+Because the entire AI pipeline is abstracted behind **LiteLLM**, the system is *not* hardcoded to Mistral. For enterprise deployments where nuanced reasoning is prioritized over cost, **the platform natively supports GPT-4, Claude 3.5 Sonnet, and Gemini 1.5 Pro**. You simply change the `MISTRAL_MODEL` environment variable to `gpt-4o` or `claude-3-5-sonnet-20240620`—requiring zero code changes to the underlying architecture.
 
 ---
 

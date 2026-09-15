@@ -248,7 +248,7 @@ exit 0
                     f.write(tc.get("input", ""))
 
             # 3. Write run.sh
-            with open(os.path.join(temp_dir, "run.sh"), "w", newline='\\n') as f:
+            with open(os.path.join(temp_dir, "run.sh"), "w", newline='\n') as f:
                 f.write(self._create_run_sh())
             os.chmod(os.path.join(temp_dir, "run.sh"), 0o777)
 
