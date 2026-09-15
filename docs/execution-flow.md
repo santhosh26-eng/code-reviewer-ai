@@ -22,26 +22,26 @@ flowchart TD
     
     %% STDIN/STDOUT Pipeline
     LangCheck -- C / C++ / Java --> STDIN["Universal STDIN/STDOUT Runner"]:::action
-    STDIN --> Mount[Mount to gcc / openjdk container]:::secure
-    Mount --> Compile[Compile Code to Executable]
-    Compile -->|Success| Pipe[Pipe JSON inputs to STDIN]
-    Compile -->|Failure| CompErr[Return Compilation Error]
-    Pipe --> Cap[Capture STDOUT & Exit Codes]
+    STDIN --> Mount["Mount to gcc / openjdk container"]:::secure
+    Mount --> Compile["Compile Code to Executable"]
+    Compile -->|Success| Pipe["Pipe JSON inputs to STDIN"]
+    Compile -->|Failure| CompErr["Return Compilation Error"]
+    Pipe --> Cap["Capture STDOUT & Exit Codes"]
     
     %% Python Pipeline
-    LangCheck -- Python --> AST[Python AST Wrapper]:::action
-    AST --> MountPy[Mount to python:3.11-slim container]:::secure
-    MountPy --> ExecScope[Run via exec() in isolated namespace]
-    ExecScope --> Inject[Inject arguments into target function]
-    Inject --> CapRet[Capture Return Value]
+    LangCheck -- Python --> AST["Python AST Wrapper"]:::action
+    AST --> MountPy["Mount to python:3.11-slim container"]:::secure
+    MountPy --> ExecScope["Run via exec() in isolated namespace"]
+    ExecScope --> Inject["Inject arguments into target function"]
+    Inject --> CapRet["Capture Return Value"]
     
     %% Evaluation
-    Cap --> Compare[Compare Actual vs Expected Output]
+    Cap --> Compare["Compare Actual vs Expected Output"]
     CapRet --> Compare
-    MockExec --> Mock[Return 'Passed (Mocked)']
+    MockExec --> Mock["Return 'Passed (Mocked)'"]
     
-    Compare --> Agg[Aggregate Results & Calculate Memory/Runtime]
-    Mock --> End([Return ExecutionResult to Frontend])
+    Compare --> Agg["Aggregate Results & Calculate Memory/Runtime"]
+    Mock --> End(["Return ExecutionResult to Frontend"])
     Agg --> End
     CompErr --> End
 ```
