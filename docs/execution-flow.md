@@ -10,18 +10,18 @@ flowchart TD
     classDef action fill:#bae6fd,stroke:#0284c7,stroke-width:2px,color:#0369a1;
     classDef secure fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#166534;
     
-    Start([User clicks '▶️ Run Code']) --> FE[Frontend: Appends language & test cases]
-    FE --> API{Router: /api/review/execute}:::decision
+    Start(["User clicks '▶️ Run Code'"]) --> FE["Frontend: Appends language & test cases"]
+    FE --> API{"Router: /api/review/execute"}:::decision
     
-    API --> EnvCheck{EXECUTION_SANDBOX<br>== 'docker'?}:::decision
+    API --> EnvCheck{"EXECUTION_SANDBOX<br>== 'docker'?"}:::decision
     
-    EnvCheck -- Yes --> DockerExec[DockerSandboxExecutor]:::action
-    EnvCheck -- No --> MockExec[MockSandboxExecutor<br/>(Local Python fallback)]:::action
+    EnvCheck -- Yes --> DockerExec["DockerSandboxExecutor"]:::action
+    EnvCheck -- No --> MockExec["MockSandboxExecutor<br/>(Local Python fallback)"]:::action
     
-    DockerExec --> LangCheck{Detected Language?}:::decision
+    DockerExec --> LangCheck{"Detected Language?"}:::decision
     
     %% STDIN/STDOUT Pipeline
-    LangCheck -- C / C++ / Java --> STDIN[Universal STDIN/STDOUT Runner]:::action
+    LangCheck -- C / C++ / Java --> STDIN["Universal STDIN/STDOUT Runner"]:::action
     STDIN --> Mount[Mount to gcc / openjdk container]:::secure
     Mount --> Compile[Compile Code to Executable]
     Compile -->|Success| Pipe[Pipe JSON inputs to STDIN]
