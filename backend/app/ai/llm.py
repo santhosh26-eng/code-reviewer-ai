@@ -19,15 +19,13 @@ def generate_review(system_prompt: str, user_prompt: str, response_schema: Any) 
     Returns:
         An instance of the response_schema with the parsed structured data.
     """
-    api_key: Optional[str] = os.getenv("GEMINI_API_KEY")
+    api_key: Optional[str] = os.getenv("MISTRAL_API_KEY")
     if not api_key:
         raise ValueError(
-            "GEMINI_API_KEY environment variable is required. "
+            "MISTRAL_API_KEY environment variable is required. "
             "Please ensure it is set in your .env file or environment."
         )
-        
-    model_name = os.getenv("GEMINI_MODEL", "gemini/gemini-3.6-flash")
-    
+    model_name = os.getenv("MISTRAL_MODEL", "mistral/open-mistral-7b")
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
