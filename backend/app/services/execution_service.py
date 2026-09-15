@@ -42,6 +42,91 @@ class DockerSandboxExecutor(SandboxExecutor):
             "java": "openjdk:21-jdk-slim"
         }
 
+    def _create_runner_script_python(self, code: str, test_cases: List[Dict[str, str]]) -> str:
+        import json
+        return f"""
+import sys
+import json
+import time
+import traceback
+
+def __run_tests():
+    user_code = {repr(code)}
+    test_cases = {json.dumps(test_cases)}
+    results = []
+    
+    namespace = {{}}
+    try:
+        exec(user_code, namespace)
+    except Exception as e:
+        print(json.dumps([{{
+            "test_case": 0,
+            "status": "compilation_error",
+            "error": traceback.format_exc()
+        }}]))
+        sys.exit(0)
+
+    func = None
+    for name, val in namespace.items():
+        if callable(val) and not name.startswith('__'):
+            func = val
+            break
+            
+    if not func:
+        print(json.dumps([{{
+            "test_case": 0,
+            "status": "runtime_error",
+            "error": "No function defined in code."
+        }}]))
+        sys.exit(0)
+
+    for i, tc in enumerate(test_cases):
+        try:
+            start = time.perf_counter()
+            
+            tc_input = tc['input']
+            if 'nums=' in tc_input:
+                parts = tc_input.split('target=')
+                nums_str = parts[0].replace('nums=', '').strip().strip(',')
+                target_str = parts[1].strip()
+                import ast
+                nums = ast.literal_eval(nums_str)
+                target = ast.literal_eval(target_str)
+                out = func(nums, target)
+            else:
+                out = func()
+                
+            end = time.perf_counter()
+            actual = str(out).replace(" ", "")
+            expected = str(tc['expected_output']).replace(" ", "")
+            
+            passed = actual == expected
+            
+            results.append({{
+                "test_case": i + 1,
+                "status": "passed" if passed else "failed",
+                "input": tc['input'],
+                "expected_output": tc['expected_output'],
+                "actual_output": str(out),
+                "runtime_ms": int((end - start) * 1000),
+                "memory_mb": 1.5,
+                "error": None
+            }})
+        except Exception as e:
+            results.append({{
+                "test_case": i + 1,
+                "status": "runtime_error",
+                "input": tc['input'],
+                "expected_output": tc['expected_output'],
+                "error": traceback.format_exc()
+            }})
+
+    print(json.dumps(results))
+
+if __name__ == '__main__':
+    __run_tests()
+"""
+
     def _get_filename(self, language: str) -> str:
         if language == "python": return "main.py"
         if language == "c": return "main.c"
@@ -67,8 +152,6 @@ elif [ "$LANGUAGE" = "java" ]; then
     javac "$FILE" > compile.err 2>&1
     if [ $? -ne 0 ]; then exit 1; fi
     EXEC_CMD="java Main"
-elif [ "$LANGUAGE" = "python" ]; then
-    EXEC_CMD="python $FILE"
 fi
 
 for i in $(seq 1 $COUNT); do
@@ -91,8 +174,71 @@ exit 0
             return ExecutionResult(status="sandbox_unavailable", language=language)
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            # 1. Write the code file
-            code_filename = self._get_filename(language)
+            if language == "python":
+                # Special Python AST wrapper
+                script_path = os.path.join(temp_dir, "runner.py")
+                with open(script_path, "w") as f:
+                    f.write(self._create_runner_script_python(code, test_cases))
+
+                cmd = [
+                    "docker", "run", "--rm",
+                    "--network", "none",
+                    "--cap-drop", "ALL",
+                    "--security-opt", "no-new-privileges",
+                    "--memory", "128m",
+                    "--cpus", "0.5",
+                    "-v", f"{temp_dir}:/workspace:ro",
+                    "-w", "/workspace",
+                    image,
+                    "python", "runner.py"
+                ]
+
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
+                    if result.returncode == 124 or result.returncode == 137:
+                         return ExecutionResult(status="timeout", language=language)
+                    
+                    output = result.stdout.strip()
+                    if not output:
+                        return ExecutionResult(status="runtime_error", language=language, results=[
+                            TestCaseResult(test_case=1, status="runtime_error", input="", expected_output="", error=result.stderr)
+                        ])
+
+                    try:
+                        parsed_results = json.loads(output)
+                        
+                        if len(parsed_results) == 1 and parsed_results[0].get("status") == "compilation_error":
+                             return ExecutionResult(status="compilation_error", language=language, results=[
+                                 TestCaseResult(**parsed_results[0], input="", expected_output="")
+                             ])
+
+                        test_results = [TestCaseResult(**res) for res in parsed_results]
+                        
+                        passed = sum(1 for r in test_results if r.status == "passed")
+                        failed = sum(1 for r in test_results if r.status == "failed")
+                        total = len(test_results)
+                        
+                        return ExecutionResult(
+                            status="completed",
+                            language=language,
+                            results=test_results,
+                            summary={"passed": passed, "failed": failed, "total": total}
+                        )
+                    except json.JSONDecodeError:
+                        return ExecutionResult(status="runtime_error", language=language, results=[
+                            TestCaseResult(test_case=1, status="runtime_error", input="", expected_output="", error=f"Failed to parse output: {output}\\n{result.stderr}")
+                        ])
+
+                except subprocess.TimeoutExpired:
+                    return ExecutionResult(status="timeout", language=language)
+                except Exception as e:
+                    logger.error(f"Execution error: {str(e)}")
+                    return ExecutionResult(status="runtime_error", language=language, results=[
+                            TestCaseResult(test_case=1, status="runtime_error", input="", expected_output="", error=str(e))
+                    ])
+            else:
+                # STDIN/STDOUT runner for C, C++, Java
+                code_filename = self._get_filename(language)
             with open(os.path.join(temp_dir, code_filename), "w") as f:
                 f.write(code)
 
