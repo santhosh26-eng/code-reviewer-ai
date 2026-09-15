@@ -1,161 +1,51 @@
-# Code Reviewer and Explainer
+# AI Code Reviewer
 
-An AI-powered code review tool that uses LangGraph, LangChain, LiteLLM, and Google Gemini to perform structured, multi-stage code analysis — with a Next.js + Clerk-authenticated frontend.
+## What it does
+The AI Code Reviewer is an intelligent, automated platform that helps developers analyze and improve their code. You can paste code in over 26 languages (including Python, C, Verilog, VHDL, Go, Rust, and MATLAB), and the system will automatically detect the language, analyze its structure using the Model Context Protocol (MCP), and generate a detailed review. 
 
----
+The review identifies bugs, security vulnerabilities, time/space complexity, and provides a refactored version of the code. The platform features a beautiful Streamlit-based workspace and is secured by Google OAuth JWT authentication.
 
-## Architecture
+## How to run it
+The project is split into a FastAPI backend and a Streamlit frontend. You need to run both servers simultaneously.
 
-```
-Code Reviewer and Explainer
-│
-├── backend/
-│   └── FastAPI + LangGraph + LangChain + LiteLLM + Gemini + MCP
-│
-└── frontend/
-    └── Streamlit + Python
-```
-
-### How it works
-
-1. The **frontend** (Streamlit) sends requests to the FastAPI backend.
-2. The **backend** runs a LangGraph pipeline:
-   - **Language Detection** — heuristic regex classifier
-   - **MCP Static Analysis** — deterministic code structure analysis
-   - **AI Review** — structured review via LiteLLM → Gemini
-3. The **backend** provides an Execution Service via `DockerSandboxExecutor`:
-   - Runs code in isolated Docker containers with `--network none`, strict memory, and read-only limits.
-   - Parses output to determine test case success/failure.
-4. The **backend** provides an AI Chat Service via LangGraph state machines (`chat_graph.py`).
-5. Results are returned as structured JSON to the Next.js UI.
-
----
-
-## Project Structure
-
-```
-PROJECT_ROOT/
-├── backend/
-│   ├── app/
-│   │   ├── agents/          # LangGraph workflow (graph + nodes)
-│   │   ├── ai/              # LiteLLM client + Pydantic prompts
-│   │   ├── analyzers/       # (reserved for future analyzers)
-│   │   ├── api/             # FastAPI routers
-│   │   ├── core/            # Auth (Clerk JWT verification)
-│   │   ├── mcp/             # MCP static analysis server + tools
-│   │   ├── services/        # Markdown report generation
-│   │   └── utils/           # Language detector, validators
-│   ├── tests/               # Pytest test suite
-│   ├── test_language_detector.py
-│   ├── test_mcp.py
-│   ├── .env                 # Backend secrets (NOT committed)
-│   ├── .env.example         # Backend env template
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── app.py               # Streamlit application entry point
-│   ├── utils/               # API clients
-│   ├── .env                 # Frontend env configuration
-│   └── requirements.txt     # Frontend Python dependencies
-│
-├── docs/
-├── CONTRIBUTING.md
-├── README.md
-└── .gitignore
-```
-
----
-
-## Local Development Setup
-
-### Prerequisites
-
-- Python 3.11+
-- A Google Gemini API key
-
----
-
-### Backend
-
+**1. Start the Backend**
 ```bash
 cd backend
-
-# 1. Create and activate a virtual environment (from project root or backend/)
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Configure environment variables
-cp .env.example .env
-# Edit .env and fill in your GEMINI_API_KEY, CLERK_SECRET_KEY, etc.
-
-# 4. Start the API server
 uvicorn app.main:app --reload
 ```
 
-The API will be available at: **http://localhost:8000**
-
-- Swagger UI: http://localhost:8000/docs
-- Health check: http://localhost:8000/health
-
----
-
-### Frontend
-
+**2. Start the Frontend**
+Open a new terminal window:
 ```bash
 cd frontend
-
-# 1. Create and activate a virtual environment (optional but recommended)
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Configure environment variables (ensure API_URL points to the backend)
-# edit .env
-
-# 4. Start the Streamlit app
 streamlit run app.py
 ```
+*Once both servers are running, open `http://localhost:8501` in your browser and click "Sign in with Google" to access the workspace.*
 
-The frontend will be available at: **http://localhost:8501**
+## Which AI model is used and why
+This project uses **Mistral** (`open-mistral-7b`) as the primary AI model, accessed through the **LiteLLM** abstraction layer. 
 
----
+**Why Mistral?**
+- **Speed & Efficiency**: Mistral 7B is highly optimized for fast inference, providing near-instantaneous code reviews without the latency overhead of massive models.
+- **Cost-Effective**: Open-weights models like Mistral are extremely cost-effective for high-volume tasks like automated code scanning.
+- **LiteLLM Abstraction**: By using LiteLLM, the platform isn't hardcoded to Mistral. It can be easily swapped out for OpenAI, Anthropic, or Google Gemini in the future with zero code changes, providing ultimate flexibility.
 
-## Environment Variables
+## What the env vars are
+To run the application, you need to create a `.env` file in the `backend/` folder with the following variables:
 
-### Backend (`backend/.env`)
+```env
+# AI Model Configuration
+MISTRAL_API_KEY=your-mistral-api-key-here
+MISTRAL_MODEL=mistral/open-mistral-7b
 
-| Variable | Description |
-|---|---|
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `GEMINI_MODEL` | LiteLLM model string (e.g. `gemini/gemini-2.5-flash`) |
-| `CLERK_SECRET_KEY` | Clerk secret key for server-side use |
-| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
-| `CLERK_ISSUER_URL` | Clerk JWT issuer URL (e.g. `https://your-app.clerk.accounts.dev`) |
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/callback
 
-### Frontend (`frontend/.env`)
-
-| Variable | Description |
-|---|---|
-| `API_URL` | Backend API base URL (e.g. `http://localhost:8000`) |
-
----
-
-## Running Tests
-
-```bash
-cd backend
-python -m pytest tests/ -v
+# Security
+JWT_SECRET=a-secure-random-string-for-session-tokens
+FRONTEND_URL=http://localhost:8501
 ```
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
