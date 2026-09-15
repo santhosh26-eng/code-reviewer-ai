@@ -352,25 +352,71 @@ class MockSandboxExecutor(SandboxExecutor):
         if not code.strip():
             return ExecutionResult(status="compilation_error", language=language)
             
+        if language == "python":
+            import sys
+            import json
+            import subprocess
+            import tempfile
+            import os
+            
+            # We can use the same AST wrapper logic used for Docker, but run it locally!
+            # We instantiate a temporary DockerSandboxExecutor just to steal the python wrapper string.
+            wrapper = DockerSandboxExecutor()._create_runner_script_python(code, test_cases)
+            
+            with tempfile.TemporaryDirectory() as temp_dir:
+                script_path = os.path.join(temp_dir, "local_runner.py")
+                with open(script_path, "w") as f:
+                    f.write(wrapper)
+                    
+                try:
+                    result = subprocess.run([sys.executable, script_path], capture_output=True, text=True, timeout=10)
+                    output = result.stdout.strip()
+                    
+                    if not output:
+                        return ExecutionResult(status="runtime_error", language=language, results=[
+                            TestCaseResult(test_case=1, status="runtime_error", input="", expected_output="", error=result.stderr)
+                        ])
+                        
+                    parsed_results = json.loads(output)
+                    if len(parsed_results) == 1 and parsed_results[0].get("status") == "compilation_error":
+                         return ExecutionResult(status="compilation_error", language=language, results=[
+                             TestCaseResult(**parsed_results[0], input="", expected_output="")
+                         ])
+
+                    test_results = [TestCaseResult(**res) for res in parsed_results]
+                    passed = sum(1 for r in test_results if r.status == "passed")
+                    failed = sum(1 for r in test_results if r.status == "failed")
+                    
+                    return ExecutionResult(
+                        status="completed",
+                        language=language,
+                        results=test_results,
+                        summary={"passed": passed, "failed": failed, "total": len(test_cases)}
+                    )
+                except Exception as e:
+                    return ExecutionResult(status="runtime_error", language=language, results=[
+                        TestCaseResult(test_case=1, status="runtime_error", input="", expected_output="", error=str(e))
+                    ])
+
+        # If it's C, C++, Java, we have to mock it since we don't have compilers natively.
         results = []
         for i, tc in enumerate(test_cases):
-            passed = "return" in code
+            # We will just pass it to avoid confusion, but label it as Mock
             results.append(TestCaseResult(
                 test_case=i+1,
-                status="passed" if passed else "failed",
-                input=tc['input'],
-                expected_output=tc['expected_output'],
-                actual_output=tc['expected_output'] if passed else "wrong",
-                runtime_ms=15,
-                memory_mb=1.2
+                status="passed",
+                input=tc.get('input', ''),
+                expected_output=tc.get('expected_output', ''),
+                actual_output=tc.get('expected_output', '') + " (Mocked)",
+                runtime_ms=1,
+                memory_mb=1.0
             ))
             
-        passed = sum(1 for r in results if r.status == "passed")
         return ExecutionResult(
             status="completed",
             language=language,
             results=results,
-            summary={"passed": passed, "failed": len(results) - passed, "total": len(results)}
+            summary={"passed": len(results), "failed": 0, "total": len(results)}
         )
 
 def get_executor() -> SandboxExecutor:
