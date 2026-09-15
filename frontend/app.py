@@ -12,10 +12,12 @@ st.set_page_config(page_title="AI Code Reviewer", page_icon="✨", layout="wide"
 # Custom CSS for styling
 st.markdown("""
 <style>
-    /* Premium Gradient Background: White, Green, Golden, Silver */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    /* Premium Cyber Dark Background */
     .stApp {
-        background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 33%, #ffd700 66%, #c0c0c0 100%);
-        color: #1f2937;
+        background: radial-gradient(circle at 10% 20%, rgb(14, 21, 38) 0%, rgb(8, 12, 23) 90%);
+        color: #e2e8f0;
         font-family: 'Inter', sans-serif;
     }
     
@@ -26,55 +28,99 @@ st.markdown("""
 
     /* Glassmorphism for chat messages */
     .stChatMessage {
-        background-color: rgba(255, 255, 255, 0.6);
+        background-color: rgba(30, 41, 59, 0.4);
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        color: #1f2937;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        color: #f8fafc;
     }
     
     /* Vibrant Headers */
-    h1, h2, h3, h4, h5, h6, .stMarkdown p {
-        color: #111827 !important;
+    h1, h2, h3, h4, h5, h6 {
+        color: #f8fafc !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+    }
+    .stMarkdown p {
+        color: #cbd5e1 !important;
     }
     
-    /* Dynamic Buttons with Hover Effects */
+    /* Dynamic Buttons with Neon Hover Effects */
     .stButton>button {
         border-radius: 8px !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         font-weight: 600 !important;
-        background-color: #ffffff;
-        color: #1f2937;
-        border: 1px solid #d1d5db;
+        background-color: rgba(30, 41, 59, 0.6);
+        color: #f1f5f9;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        backdrop-filter: blur(8px);
     }
+    
+    /* Primary Action Button (AI Review) */
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+    }
+    
     .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(218, 165, 32, 0.4); /* subtle golden shadow */
-        border-color: #ffd700;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(6, 182, 212, 0.2); /* Cyan Glow */
+        border-color: #06b6d4;
+        color: #06b6d4;
+    }
+    
+    .stButton>button[kind="primary"]:hover {
+        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5); /* Purple Glow */
+        color: white;
     }
     
     /* Refined Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px 8px 0 0;
-        background-color: rgba(255, 255, 255, 0.4);
+        background-color: rgba(30, 41, 59, 0.3);
         padding: 10px 20px;
-        transition: background-color 0.2s;
-        color: #374151;
+        transition: all 0.2s ease;
+        color: #94a3b8;
+        border: 1px solid transparent;
+        border-bottom: none;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background-color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(30, 41, 59, 0.8);
+        color: #e2e8f0;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #ffffff !important;
-        border-bottom: 3px solid #10b981 !important; /* Green accent */
-        color: #047857 !important;
+        background-color: rgba(30, 41, 59, 0.8) !important;
+        border: 1px solid rgba(148, 163, 184, 0.1) !important;
+        border-bottom: 3px solid #06b6d4 !important; /* Electric Cyan accent */
+        color: #06b6d4 !important;
+    }
+    
+    /* Input Fields and Select Boxes */
+    .stSelectbox>div>div, .stTextInput>div>div {
+        background-color: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: #f1f5f9;
+        border-radius: 6px;
+    }
+    
+    /* Code styling in Markdown */
+    code {
+        font-family: 'JetBrains Mono', monospace !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #38bdf8 !important; /* Sky blue code */
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(148, 163, 184, 0.1);
     }
 </style>
 """, unsafe_allow_html=True)
