@@ -14,6 +14,7 @@ class ReviewState(TypedDict):
     # Initial input data
     code: str
     review_depth: str
+    provided_language: Optional[str]
     
     # Populated during the language detection phase
     detected_language: Optional[str]
@@ -67,13 +68,14 @@ def build_review_graph() -> CompiledStateGraph:
 # The module-level compiled graph ready for import and execution
 review_graph = build_review_graph()
 
-def run_review(code: str, depth: str = "Quick Scan") -> ReviewState:
+def run_review(code: str, depth: str = "Quick Scan", provided_language: Optional[str] = None) -> ReviewState:
     """
     Validates the input code and executes the complete Code Reviewer workflow.
     
     Args:
         code (str): The code to review.
         depth (str): The review depth, e.g., "Quick Scan" or "Deep Review".
+        provided_language (Optional[str]): The language if already detected or specified by the user.
         
     Returns:
         ReviewState: The final state containing the AI review output or any errors.
@@ -83,6 +85,7 @@ def run_review(code: str, depth: str = "Quick Scan") -> ReviewState:
     initial_state: ReviewState = {
         "code": code,
         "review_depth": depth,
+        "provided_language": provided_language,
         "detected_language": None,
         "language_confidence": None,
         "static_analysis": None,

@@ -12,6 +12,7 @@ router = APIRouter()
 class ReviewRequest(BaseModel):
     code: str = Field(..., description="The user's source code to review.")
     depth: str = Field(..., description="Review depth, must be either 'quick' or 'deep'.")
+    language: Optional[str] = Field(None, description="The language of the code, if known.")
 
 class ReviewResponse(BaseModel):
     success: bool
@@ -49,7 +50,7 @@ async def create_review(request: ReviewRequest, current_user: dict = Depends(get
         
     try:
         # Run LangGraph pipeline
-        result = run_review(code=request.code, depth=mapped_depth)
+        result = run_review(code=request.code, depth=mapped_depth, provided_language=request.language)
         
         # Check if the pipeline caught an error
         if result.get("error"):

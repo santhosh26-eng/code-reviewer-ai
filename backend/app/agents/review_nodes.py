@@ -21,6 +21,7 @@ def detect_language_node(state: ReviewState) -> Dict[str, Any]:
               language_confidence, and optionally error).
     """
     code = state.get("code")
+    provided_language = state.get("provided_language")
     
     # Handle empty, missing, or invalid code inputs safely
     if not code or not isinstance(code, str) or not code.strip():
@@ -28,6 +29,13 @@ def detect_language_node(state: ReviewState) -> Dict[str, Any]:
             "detected_language": "Unknown",
             "language_confidence": 0.0,
             "error": "Unable to detect programming language"
+        }
+        
+    # If the user explicitly provided a language (and it's not Auto-Detect), trust it
+    if provided_language and provided_language != "Auto-Detect":
+        return {
+            "detected_language": provided_language,
+            "language_confidence": 1.0
         }
         
     try:
@@ -142,8 +150,9 @@ Code to Review:
         )
 
         # Format the output matching ReviewState fields exactly
+        final_language = detected_language if detected_language != "Unknown" else review.detected_language
         return {
-            "detected_language": review.detected_language,
+            "detected_language": final_language,
             "explanation": review.explanation,
             "bugs": [bug.model_dump() for bug in review.bugs],
             "security_issues": [issue.model_dump() for issue in review.security_issues],
@@ -153,7 +162,7 @@ Code to Review:
         }
         
     except Exception as e:
-        # Gracefully catch API/network/parsing errors
+        # Gracefully catch API/network/parsing errors and return the specific error
         return {
-            "error": "Failed to connect to the AI reviewer service or process the code. Please ensure your API key is valid and try again."
+            "error": f"AI Reviewer failed: {str(e)}"
         }
