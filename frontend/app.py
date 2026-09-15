@@ -356,7 +356,7 @@ with col2:
             if st.button("▶️ Run Code", type="primary", use_container_width=True):
                 with st.spinner(f"Executing {active_language} code..."):
                     try:
-                        res = execute_code(st.session_state.code, st.session_state.language_preference, st.session_state.test_cases)
+                        res = execute_code(st.session_state.code, active_language, st.session_state.test_cases)
                         st.session_state.execution_result = res
                     except Exception as e:
                         st.error(f"Execution failed: {str(e)}")
