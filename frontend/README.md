@@ -1,20 +1,21 @@
-# Code Reviewer and Explainer - Frontend
+# Streamlit Frontend
 
-This is the Next.js frontend for the Code Reviewer and Explainer platform. It provides a LeetCode-style dual-pane interface with an AI Chat panel on the left and a Workspace on the right.
+This is the Python/Streamlit based frontend for the Code Reviewer and Explainer platform.
 
-## Features
+## Setup
 
-- **Monaco Editor Integration**: Write code with syntax highlighting.
-- **Language Support**: Python, JavaScript, TypeScript, C, C++, Java, and more.
-- **AI Review & Refactor**: Get static analysis, bugs, and security issues via the FastAPI backend.
-- **AI Code Chat**: Ask contextual questions about your code using the LangGraph AI assistant.
-- **Test Case Execution**: Securely run your code against custom test cases via the Docker Sandbox Executor.
-- **Clerk Authentication**: Secure login to access API endpoints.
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-## Local Setup
+2. Configure environment:
+Ensure `.env` contains:
+```
+API_URL=http://localhost:8000
+```
 
-1. Copy `.env.example` to `.env.local` and add your Clerk Publishable Key and the backend API URL.
-2. Run `npm install`
-3. Run `npm run dev`
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Run the app:
+```bash
+streamlit run app.py
+```
