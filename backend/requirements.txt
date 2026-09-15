@@ -11,3 +11,4 @@ uvicorn
 pyjwt
 cryptography
 litellm
+httpx
